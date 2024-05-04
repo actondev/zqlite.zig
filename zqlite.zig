@@ -79,7 +79,8 @@ pub const Conn = struct {
     }
 
     pub fn exec(self: Conn, sql: []const u8, values: anytype) !void {
-        const stmt = try self.prepare(sql, values);
+        const stmt = try self.prepare(sql);
+        try stmt.bind(values);
         defer stmt.deinit();
         try stmt.stepToCompletion();
     }
@@ -91,7 +92,7 @@ pub const Conn = struct {
         }
     }
 
-    pub fn prepare(self: Conn, sql: []const u8, values: anytype) !Stmt {
+    pub fn prepare(self: Conn, sql: []const u8) !Stmt {
         var n_stmt: ?*c.sqlite3_stmt = null;
         const rc = c.sqlite3_prepare_v2(self.conn, sql.ptr, @intCast(sql.len), &n_stmt, null);
         if (rc != c.SQLITE_OK) {
@@ -99,11 +100,6 @@ pub const Conn = struct {
         }
 
         const stmt = n_stmt.?;
-        if (values.len > 0) {
-            inline for (values, 0..) |value, i| {
-                try bindValue(@TypeOf(value), stmt, value, i + 1);
-            }
-        }
 
         return .{
             .stmt = stmt,
@@ -120,7 +116,8 @@ pub const Conn = struct {
     }
 
     pub fn row(self: Conn, sql: []const u8, values: anytype) !?Row {
-        const stmt = try self.prepare(sql, values);
+        const stmt = try self.prepare(sql);
+        try stmt.bind(values);
         if (try stmt.step() == false) {
             return null;
         }
@@ -128,7 +125,8 @@ pub const Conn = struct {
     }
 
     pub fn rows(self: Conn, sql: []const u8, values: anytype) !Rows {
-        const stmt = try self.prepare(sql, values);
+        const stmt = try self.prepare(sql);
+        try stmt.bind(values);
         return .{ .stmt = stmt, .err = null };
     }
 
@@ -226,6 +224,18 @@ pub const Stmt = struct {
         const rc = c.sqlite3_finalize(self.stmt);
         if (rc != c.SQLITE_OK) {
             return errorFromCode(rc);
+        }
+    }
+
+    pub fn bind(self: Stmt, values: anytype) !void {
+        const rc = c.sqlite3_reset(self.stmt);
+        if (rc != c.SQLITE_OK) {
+            return errorFromCode(rc);
+        }
+        if (values.len > 0) {
+            inline for (values, 0..) |value, i| {
+                try bindValue(@TypeOf(value), self.stmt, value, i + 1);
+            }
         }
     }
 
@@ -555,7 +565,7 @@ pub const Error = error{
     OkLoadPermanently,
 };
 
-fn errorFromCode(result: c_int) Error {
+pub fn errorFromCode(result: c_int) Error {
     return switch (result) {
         c.SQLITE_ABORT => error.Abort,
         c.SQLITE_AUTH => error.Auth,
