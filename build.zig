@@ -7,7 +7,7 @@ pub fn build(b: *std.Build) !void {
     const default_sqlite3_build = [_][]const u8{"-std=c99"};
     const sqlite3_build = b.option([]const []const u8, "sqlite3", "options to use when compiling sqlite3") orelse &default_sqlite3_build;
 
-    _ = b.addModule("zqlite", .{
+    const module = b.addModule("zqlite", .{
         .root_source_file = b.path("zqlite.zig"),
     });
 
@@ -16,10 +16,24 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
-    lib_test.addCSourceFile(.{
+
+    const sqlite3 = b.addStaticLibrary(.{
+        .name = "sqlite3",
+        .target = target,
+        .optimize = optimize,
+    });
+    b.installArtifact(sqlite3);
+
+    sqlite3.addCSourceFile(.{
         .file = b.path("lib/sqlite3/sqlite3.c"),
         .flags = sqlite3_build,
     });
+    sqlite3.linkLibC();
+    sqlite3.addIncludePath(b.path("lib/sqlite3"));
+    sqlite3.installHeader(b.path("lib/sqlite3/sqlite3.h"), "sqlite3.h");
+
+    module.linkLibrary(sqlite3);
+
     lib_test.addIncludePath(b.path("lib/sqlite3"));
     lib_test.linkLibC();
 

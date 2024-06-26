@@ -1,0 +1,14 @@
+.{
+    .name = "zqlite.zig",
+    .version = "1.0.0",
+
+    .dependencies = .{
+        // .sqlite_src = .{
+        //     .url = "https://www.sqlite.org/2024/sqlite-amalgamation-3460000.zip",
+        //     .hash = "122022cc39c8caaac7f54794e193b4bc017bb1853bc7bbdb3a9813127b3524f9e55f",
+        // },
+    },
+    .paths = .{
+        "",
+    },
+}
