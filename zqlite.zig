@@ -155,20 +155,20 @@ fn bindValue(comptime T: type, stmt: *c.sqlite3_stmt, value: anytype, bind_index
     var rc: c_int = 0;
 
     switch (@typeInfo(T)) {
-        .Null => rc = c.sqlite3_bind_null(stmt, bind_index),
-        .Int, .ComptimeInt => rc = c.sqlite3_bind_int64(stmt, bind_index, @intCast(value)),
-        .Float, .ComptimeFloat => rc = c.sqlite3_bind_double(stmt, bind_index, value),
-        .Bool => {
+        .null => rc = c.sqlite3_bind_null(stmt, bind_index),
+        .int, .comptime_int => rc = c.sqlite3_bind_int64(stmt, bind_index, @intCast(value)),
+        .float, .comptime_float => rc = c.sqlite3_bind_double(stmt, bind_index, value),
+        .bool => {
             if (value) {
                 rc = c.sqlite3_bind_int64(stmt, bind_index, @intCast(1));
             } else {
                 rc = c.sqlite3_bind_int64(stmt, bind_index, @intCast(0));
             }
         },
-        .Pointer => |ptr| {
+        .pointer => |ptr| {
             switch (ptr.size) {
-                .One => switch (@typeInfo(ptr.child)) {
-                    .Array => |arr| {
+                .one => switch (@typeInfo(ptr.child)) {
+                    .array => |arr| {
                         if (arr.child == u8) {
                             rc = c.sqlite3_bind_text(stmt, bind_index, value.ptr, @intCast(value.len), c.SQLITE_STATIC);
                         } else {
@@ -177,22 +177,22 @@ fn bindValue(comptime T: type, stmt: *c.sqlite3_stmt, value: anytype, bind_index
                     },
                     else => bindError(T),
                 },
-                .Slice => switch (ptr.child) {
+                .slice => switch (ptr.child) {
                     u8 => rc = c.sqlite3_bind_text(stmt, bind_index, value.ptr, @intCast(value.len), c.SQLITE_STATIC),
                     else => bindError(T),
                 },
                 else => bindError(T),
             }
         },
-        .Array => return bindValue(@TypeOf(&value), stmt, &value, bind_index),
-        .Optional => |opt| {
+        .array => return bindValue(@TypeOf(&value), stmt, &value, bind_index),
+        .optional => |opt| {
             if (value) |v| {
                 return bindValue(opt.child, stmt, v, bind_index);
             } else {
                 rc = c.sqlite3_bind_null(stmt, bind_index);
             }
         },
-        .Struct => {
+        .@"struct" => {
             if (T == Blob) {
                 const inner = value.value;
                 rc = c.sqlite3_bind_blob(stmt, bind_index, @ptrCast(inner), @intCast(inner.len), c.SQLITE_STATIC);
@@ -780,8 +780,8 @@ test "exec and scan" {
 
     conn.exec(
         \\
-        \\	insert into test (cint, creal, ctext, cblob)
-        \\	values (?1, ?2, ?3, ?4)
+        \\ insert into test (cint, creal, ctext, cblob)
+        \\ values (?1, ?2, ?3, ?4)
     , .{ -3, 2.2, "three", "four" }) catch unreachable;
 
     try t.expectEqual(@as(usize, 1), conn.changes());
@@ -814,8 +814,8 @@ test "bind null" {
 
     conn.exec(
         \\
-        \\	insert into test (cintn, crealn, ctextn, cblobn)
-        \\	values (?1, ?2, ?3, ?4)
+        \\ insert into test (cintn, crealn, ctextn, cblobn)
+        \\ values (?1, ?2, ?3, ?4)
     , .{ null, null, null, null }) catch unreachable;
     try t.expectEqual(@as(usize, 1), conn.changes());
 
@@ -835,8 +835,8 @@ test "bind null optionals" {
 
     conn.exec(
         \\
-        \\	insert into test (cintn, crealn, ctextn, cblobn)
-        \\	values (?1, ?2, ?3, ?4)
+        \\ insert into test (cintn, crealn, ctextn, cblobn)
+        \\ values (?1, ?2, ?3, ?4)
     , .{ empty.intn, empty.realn, empty.textn, empty.blobn }) catch unreachable;
     try t.expectEqual(@as(usize, 1), conn.changes());
 
@@ -1101,18 +1101,18 @@ fn testDB() Conn {
     var conn = open(":memory:", OpenFlags.Create | OpenFlags.EXResCode) catch unreachable;
     conn.execNoArgs(
         \\
-        \\	create table test (
-        \\		id integer primary key not null,
-        \\		cint integer not null default(0),
-        \\		cintn integer null,
-        \\		creal real not null default(0.0),
-        \\		crealn real null,
-        \\		ctext text not null default(''),
-        \\		ctextn text null,
-        \\		cblob blob not null default(''),
-        \\		cblobn blob null,
-        \\		uniq int unique null
-        \\	)
+        \\ create table test (
+        \\ id integer primary key not null,
+        \\ cint integer not null default(0),
+        \\ cintn integer null,
+        \\ creal real not null default(0.0),
+        \\ crealn real null,
+        \\ ctext text not null default(''),
+        \\ ctextn text null,
+        \\ cblob blob not null default(''),
+        \\ cblobn blob null,
+        \\ uniq int unique null
+        \\ )
     ) catch unreachable;
     return conn;
 }
