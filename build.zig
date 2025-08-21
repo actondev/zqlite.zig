@@ -12,15 +12,19 @@ pub fn build(b: *std.Build) !void {
     });
 
     const lib_test = b.addTest(.{
-        .root_source_file = b.path("zqlite.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("zqlite.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
-    const sqlite3 = b.addStaticLibrary(.{
+    const sqlite3 = b.addLibrary(.{
         .name = "sqlite3",
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     b.installArtifact(sqlite3);
 
