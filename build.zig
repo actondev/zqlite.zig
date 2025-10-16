@@ -16,6 +16,25 @@ pub fn build(b: *std.Build) !void {
     });
     zqlite.addIncludePath(lib_path);
 
+    const sqlite3 = b.addLibrary(.{
+        .name = "sqlite3",
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    b.installArtifact(sqlite3);
+
+    sqlite3.addCSourceFile(.{
+        .file = b.path("lib/sqlite3.c"),
+        .flags = sqlite3_build,
+    });
+    sqlite3.linkLibC();
+    sqlite3.addIncludePath(b.path("lib"));
+    sqlite3.installHeader(b.path("lib/sqlite3.h"), "sqlite3.h");
+
+    zqlite.linkLibrary(sqlite3);
+
     const lib_test = b.addTest(.{
         .root_module = zqlite,
         .test_runner = .{ .path = b.path("test_runner.zig"), .mode = .simple },
