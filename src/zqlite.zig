@@ -9,6 +9,7 @@ pub const Row = conn.Row;
 pub const Rows = conn.Rows;
 pub const Stmt = conn.Stmt;
 pub const ColumnType = conn.ColumnType;
+pub const errorFromCode = conn.errorFromCode;
 
 pub fn open(path: [*:0]const u8, flags: c_int) !Conn {
     return Conn.init(path, flags);
