@@ -538,7 +538,7 @@ pub const Rows = struct {
     }
 };
 
-fn errorFromCode(result: c_int) Error {
+pub fn errorFromCode(result: c_int) Error {
     return switch (result) {
         c.SQLITE_ABORT => error.Abort,
         c.SQLITE_AUTH => error.Auth,
