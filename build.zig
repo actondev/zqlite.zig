@@ -1,4 +1,5 @@
 const std = @import("std");
+const Translator = @import("translate_c").Translator;
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -33,7 +34,14 @@ pub fn build(b: *std.Build) !void {
     });
     lib_sqlite.installHeadersDirectory(lib_path, "", .{});
 
-    mod_zqlite.linkLibrary(lib_sqlite);
+    const sqlite3_c: Translator = .init(b.dependency("translate_c", .{}), .{
+        .name = "sqlite3_c",
+        .c_source_file = b.path("lib/sqlite3.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    sqlite3_c.linkLibrary(lib_sqlite);
+    mod_zqlite.addImport("sqlite3_c", sqlite3_c.mod);
 
     const tests = b.addTest(.{
         .root_module = mod_zqlite,
